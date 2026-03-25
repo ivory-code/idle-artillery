@@ -11,13 +11,42 @@ interface ScreenShellProps extends PropsWithChildren {
 export function ScreenShell({ children, scroll = true, contentStyle }: ScreenShellProps) {
   const body = <View style={[styles.content, contentStyle]}>{children}</View>;
 
-  return <SafeAreaView style={styles.safeArea}>{scroll ? <ScrollView contentContainerStyle={styles.scrollContent}>{body}</ScrollView> : body}</SafeAreaView>;
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View pointerEvents="none" style={styles.bgLayer}>
+        <View style={[styles.orb, styles.orbA]} />
+        <View style={[styles.orb, styles.orbB]} />
+      </View>
+      {scroll ? <ScrollView contentContainerStyle={styles.scrollContent}>{body}</ScrollView> : body}
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  bgLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: colors.bgMid,
+    opacity: 0.4,
+  },
+  orbA: {
+    width: 260,
+    height: 260,
+    top: -120,
+    right: -90,
+  },
+  orbB: {
+    width: 190,
+    height: 190,
+    bottom: -80,
+    left: -70,
   },
   scrollContent: {
     flexGrow: 1,
