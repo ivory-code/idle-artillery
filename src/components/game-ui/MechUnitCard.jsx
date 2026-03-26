@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { GamePanel } from './GamePanel';
 import { palette } from './palette';
@@ -17,15 +17,32 @@ function silhouetteStyle(archetype) {
   return { width: 32, height: 18, borderRadius: 5, backgroundColor: '#7bd6ff' };
 }
 
-export function MechUnitCard({ name, archetype, cost, rarity = 'common', modules = {} }) {
+export function MechUnitCard({
+  name,
+  archetype,
+  cost,
+  rarity = 'common',
+  modules = {},
+  unitImageSource,
+  panelFrameSource,
+  panelBackgroundSource,
+  rarityFrameSource,
+}) {
   const rarityTone = rarity === 'epic' ? palette.epic : rarity === 'rare' ? palette.rare : palette.textDim;
 
   return (
-    <GamePanel tone="player" style={styles.panel} rightBadge={rarity.toUpperCase()}>
+    <GamePanel tone="player" style={styles.panel} rightBadge={rarity.toUpperCase()} frameSource={panelFrameSource} backgroundSource={panelBackgroundSource}>
       <View style={styles.top}>
         <View style={styles.silhouetteBox}>
-          <View style={[styles.silhouette, silhouetteStyle(archetype)]} />
-          <View style={styles.legs} />
+          {unitImageSource ? (
+            <Image source={unitImageSource} style={styles.unitImage} resizeMode="contain" />
+          ) : (
+            <>
+              <View style={[styles.silhouette, silhouetteStyle(archetype)]} />
+              <View style={styles.legs} />
+            </>
+          )}
+          {rarityFrameSource ? <Image source={rarityFrameSource} style={styles.rarityFrame} resizeMode="stretch" /> : null}
         </View>
         <View style={styles.meta}>
           <Text numberOfLines={1} style={styles.name}>
@@ -55,6 +72,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   silhouetteBox: {
+    position: 'relative',
+    overflow: 'hidden',
     width: 58,
     height: 50,
     borderRadius: 9,
@@ -67,6 +86,14 @@ const styles = StyleSheet.create({
   silhouette: {
     borderWidth: 1,
     borderColor: '#d5ebff',
+  },
+  unitImage: {
+    width: '100%',
+    height: '100%',
+  },
+  rarityFrame: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.38,
   },
   legs: {
     width: 18,

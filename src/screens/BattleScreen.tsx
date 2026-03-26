@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { ASSET_KEYS, getBackgroundAsset, getBaseAsset, getDeployButtonSkins, getUiAsset, getUnitAsset } from '../assets';
 import { BattleTopHUD } from '../components/game-ui/BattleTopHUD';
 import { DeploymentButton } from '../components/game-ui/DeploymentButton';
 import { GamePanel } from '../components/game-ui/GamePanel';
@@ -13,6 +14,7 @@ import { getSquadCombatUnits } from '../state/selectors';
 
 const TICK_SEC = 0.1;
 const TICK_MS = 100;
+const DEPLOY_BUTTON_SKINS = getDeployButtonSkins();
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
@@ -109,25 +111,51 @@ function ArchetypeSilhouette({ archetype, isAlly, tone }: any) {
   );
 }
 
-function UnitSprite({ entity, elapsedSec }: any) {
+function UnitSprite({ entity, elapsedSec, groundTop, unitSize }: any) {
   const phase = idPhase(entity.id);
   const isAlly = entity.team === 'ally';
   const wobble = Math.sin((elapsedSec + phase) * 8) * 1.8;
   const hpRatio = entity.maxHp > 0 ? Math.max(0, Math.min(1, entity.hp / entity.maxHp)) : 0;
   const archetype = entity.archetype || (isAlly ? 'artillery' : 'fire');
+  const unitAsset = getUnitAsset({ team: isAlly ? 'ally' : 'enemy', archetype });
   const tone = getArchetypeTone(archetype, isAlly);
   const muzzleRatio = clamp01((entity.flashSec || 0) / 0.1);
   const hitRatio = clamp01((entity.hitSec || 0) / 0.18);
   const spawnRatio = clamp01((entity.spawnSec || 0) / 0.45);
   const thrustPulse = 0.42 + (Math.sin((elapsedSec + phase) * 15) + 1) * 0.18;
+  const hpTrackWidth = Math.max(24, unitSize * 0.82);
+  const hpTrackHeight = Math.max(4, unitSize * 0.12);
+  const hitSize = Math.max(20, unitSize * 0.64);
+  const flashWidth = Math.max(8, unitSize * 0.24);
+  const flashHeight = Math.max(4, unitSize * 0.12);
+  const trailWidth = Math.max(7, unitSize * 0.22);
+  const trailHeight = Math.max(5, unitSize * 0.16);
+  const shadowWidth = Math.max(24, unitSize * 0.72);
+  const shadowHeight = Math.max(5, unitSize * 0.16);
+  const spawnRingWidth = Math.max(30, unitSize * 0.96);
+  const spawnRingHeight = Math.max(11, unitSize * 0.35);
 
   return (
-    <View style={[styles.unitWrap, { left: `${entity.x * 100}%`, top: 84 + wobble }]}>
+    <View
+      style={[
+        styles.unitWrap,
+        {
+          left: `${entity.x * 100}%`,
+          top: groundTop - unitSize - 4 + wobble,
+          width: unitSize,
+          height: unitSize,
+          marginLeft: -(unitSize / 2),
+        },
+      ]}
+    >
       {spawnRatio > 0 ? (
         <View
           style={[
             styles.spawnRing,
             {
+              width: spawnRingWidth,
+              height: spawnRingHeight,
+              bottom: -Math.max(4, unitSize * 0.12),
               borderColor: tone.glow,
               opacity: spawnRatio * 0.8,
               transform: [{ scale: 1 + (1 - spawnRatio) * 0.9 }],
@@ -135,7 +163,16 @@ function UnitSprite({ entity, elapsedSec }: any) {
           ]}
         />
       ) : null}
-      <View style={styles.unitHpTrack}>
+      <View
+        style={[
+          styles.unitHpTrack,
+          {
+            width: hpTrackWidth,
+            height: hpTrackHeight,
+            top: -Math.max(7, unitSize * 0.2),
+          },
+        ]}
+      >
         <View style={[styles.unitHpFill, { width: `${hpRatio * 100}%`, backgroundColor: isAlly ? palette.good : palette.enemyB }]} />
       </View>
       <View
@@ -143,30 +180,54 @@ function UnitSprite({ entity, elapsedSec }: any) {
           styles.unitTrail,
           isAlly ? styles.unitTrailAlly : styles.unitTrailEnemy,
           {
+            width: trailWidth,
+            height: trailHeight,
+            bottom: Math.max(8, unitSize * 0.24),
             opacity: thrustPulse,
             left: isAlly ? -7 : undefined,
             right: !isAlly ? -7 : undefined,
           },
         ]}
       />
-      <View style={[styles.unitShadow, isAlly ? styles.unitShadowAlly : styles.unitShadowEnemy]} />
+      <View style={[styles.unitShadow, isAlly ? styles.unitShadowAlly : styles.unitShadowEnemy, { width: shadowWidth, height: shadowHeight }]} />
       {hitRatio > 0 ? (
         <View
           style={[
             styles.hitFlash,
             {
+              width: hitSize,
+              height: hitSize,
+              bottom: Math.max(4, unitSize * 0.12),
               opacity: hitRatio * 0.9,
               backgroundColor: isAlly ? '#8beaff' : '#ffae95',
             },
           ]}
         />
       ) : null}
-      <ArchetypeSilhouette archetype={archetype} isAlly={isAlly} tone={tone} />
+      <View
+        style={[
+          styles.unitPlate,
+          isAlly ? styles.unitPlateAlly : styles.unitPlateEnemy,
+          {
+            width: unitSize * 0.84,
+            height: unitSize * 0.6,
+            bottom: Math.max(2, unitSize * 0.08),
+          },
+        ]}
+      />
+      <Image
+        source={unitAsset}
+        style={[styles.unitAsset, !isAlly ? styles.unitAssetFlip : null, { width: unitSize * 0.9, height: unitSize * 0.74 }]}
+        resizeMode="contain"
+      />
       {muzzleRatio > 0 ? (
         <View
           style={[
             styles.muzzleFlash,
             {
+              width: flashWidth,
+              height: flashHeight,
+              bottom: Math.max(12, unitSize * 0.35),
               opacity: 0.2 + muzzleRatio * 0.8,
               backgroundColor: tone.glow,
               right: isAlly ? -3 : undefined,
@@ -179,16 +240,19 @@ function UnitSprite({ entity, elapsedSec }: any) {
   );
 }
 
-function BattlefieldSpark({ index, elapsedSec, spike }: { index: number; elapsedSec: number; spike: boolean }) {
+function BattlefieldSpark({ index, elapsedSec, spike, laneHeight }: { index: number; elapsedSec: number; spike: boolean; laneHeight: number }) {
   const x = (elapsedSec * (22 + index * 2) + index * 14) % 88;
-  const y = 62 + Math.sin(elapsedSec * 5 + index) * 28;
+  const y = laneHeight * 0.28 + Math.sin(elapsedSec * 5 + index) * laneHeight * 0.16;
   const color = spike && index % 2 === 0 ? palette.enemyA : palette.playerA;
+  const size = laneHeight > 250 ? 4 : 3;
 
-  return <View style={[styles.spark, { left: `${x + 6}%`, top: y, backgroundColor: color }]} />;
+  return <View style={[styles.spark, { width: size, height: size, left: `${x + 6}%`, top: y, backgroundColor: color }]} />;
 }
 
 export function BattleScreen({ navigation }: any) {
   const { state, dispatch } = useGame();
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const squadUnits = useMemo(
     () => getSquadCombatUnits(state),
     [state.builds, state.collection.partLevels, state.squad.slots, state.squad.formationId, state.upgrades.levels]
@@ -245,124 +309,206 @@ export function BattleScreen({ navigation }: any) {
     setRuntime(createSurvivalState(templates));
   }, [templates]);
 
+  const laneHeight = useMemo(() => {
+    if (isLandscape) {
+      return Math.max(246, Math.min(height - 178, 360));
+    }
+    return Math.max(210, Math.min(height * 0.48, 292));
+  }, [height, isLandscape]);
+  const unitSize = useMemo(() => {
+    if (isLandscape) {
+      return Math.max(46, Math.min(58, Math.round(laneHeight * 0.2)));
+    }
+    return Math.max(36, Math.min(44, Math.round(laneHeight * 0.17)));
+  }, [isLandscape, laneHeight]);
+  const groundTop = Math.round(laneHeight * (isLandscape ? 0.76 : 0.71));
+  const gridLineATop = Math.round(laneHeight * 0.28);
+  const gridLineBTop = Math.round(laneHeight * 0.5);
+  const allyBaseHeight = Math.round(laneHeight * (isLandscape ? 0.62 : 0.48));
+  const allyBaseWidth = Math.round(allyBaseHeight * 0.72);
+  const enemyBaseHeight = Math.round(laneHeight * (isLandscape ? 0.58 : 0.45));
+  const enemyBaseWidth = Math.round(enemyBaseHeight * 0.72);
+  const allyBaseTop = groundTop - allyBaseHeight + 8;
+  const enemyBaseTop = groundTop - enemyBaseHeight + 8;
   const timeLeftSec = Math.max(0, runtime.durationSec - runtime.elapsedSec);
-  const sparkCount = Math.min(14, Math.max(5, runtime.entities.length + Math.floor(runtime.wave / 2)));
+  const sparkCount = isLandscape ? Math.min(22, Math.max(8, runtime.entities.length + runtime.wave)) : Math.min(14, Math.max(5, runtime.entities.length + Math.floor(runtime.wave / 2)));
   const spawnPulse = clamp01((runtime.spawnPulseSec || 0) / 0.26);
   const baseFlash = clamp01((runtime.baseFlashSec || 0) / 0.2);
+  const wattRatio = runtime.wattMax > 0 ? clamp01(runtime.watt / runtime.wattMax) : 0;
   const pressureLabel = lanePressure.pressure > 0.7 ? 'BREACH RISK' : lanePressure.pressure > 0.35 ? 'HOLD LINE' : 'STABLE';
+  const pressurePercent = Math.round(lanePressure.pressure * 100);
 
   return (
-    <ScreenShell>
-      <BattleTopHUD
-        wave={runtime.wave}
-        timeLeftSec={timeLeftSec}
-        watt={runtime.watt}
-        wattMax={runtime.wattMax}
-        wattRegen={runtime.wattRegen}
-        baseHp={runtime.baseHp}
-        baseMaxHp={runtime.baseMaxHp}
-        threat={threat}
-      />
+    <ScreenShell scroll={false} contentStyle={[styles.screenContent, isLandscape ? styles.screenContentLandscape : styles.screenContentPortrait]}>
+      <View style={styles.hudWrap}>
+        <BattleTopHUD
+          wave={runtime.wave}
+          timeLeftSec={timeLeftSec}
+          watt={runtime.watt}
+          wattMax={runtime.wattMax}
+          wattRegen={runtime.wattRegen}
+          baseHp={runtime.baseHp}
+          baseMaxHp={runtime.baseMaxHp}
+          threat={threat}
+          frameSource={getUiAsset(ASSET_KEYS.ui.hudTopFrame)}
+          backgroundSource={getUiAsset(ASSET_KEYS.ui.hudFrames)}
+          wattPanelSource={getUiAsset(ASSET_KEYS.ui.wattPanel)}
+          hpPanelSource={getUiAsset(ASSET_KEYS.ui.statBoxSmall)}
+        />
+      </View>
+
+      <View style={styles.battleCore}>
+        <GamePanel
+          title="Battlefield"
+          rightBadge={`W${runtime.wave} · E${lanePressure.enemyCount}`}
+          tone={threat === 'spike' ? 'enemy' : 'player'}
+          style={styles.battlePanel}
+          frameSource={getUiAsset(ASSET_KEYS.ui.hudTopFrame)}
+          backgroundSource={getUiAsset(ASSET_KEYS.ui.hudFrames)}
+          backgroundOpacity={0.2}
+          frameOpacity={0.62}
+          innerStyle={styles.battlePanelInner}
+        >
+          <View style={styles.frontlineRow}>
+            <View style={[styles.frontlineTrack, isLandscape ? styles.frontlineTrackLandscape : null]}>
+              <View style={[styles.frontlineThreatFill, { width: `${lanePressure.pressure * 100}%` }]} />
+              <View style={[styles.frontlineMarkerAlly, isLandscape ? styles.frontlineMarkerLandscape : null, { left: `${lanePressure.allyFront * 100}%` }]} />
+              <View style={[styles.frontlineMarkerEnemy, isLandscape ? styles.frontlineMarkerLandscape : null, { left: `${lanePressure.enemyFront * 100}%` }]} />
+              <View style={[styles.frontlineCenterLine, { left: `${((lanePressure.allyFront + lanePressure.enemyFront) / 2) * 100}%` }]} />
+            </View>
+            <View style={[styles.pressureChip, lanePressure.pressure > 0.7 ? styles.pressureChipHot : null]}>
+              <Text style={styles.pressureChipText}>{pressureLabel}</Text>
+            </View>
+          </View>
+
+          <ImageBackground source={getBackgroundAsset(ASSET_KEYS.backgrounds.battlefieldMain)} resizeMode="cover" style={[styles.laneWrap, { height: laneHeight }]} imageStyle={styles.laneBackgroundImage}>
+            <View style={styles.battleVignette} />
+            <View style={[styles.enemyPressureFog, { opacity: 0.2 + lanePressure.pressure * 0.42, width: `${34 + lanePressure.pressure * 40}%` }]} />
+            <View style={styles.playerBacklight} />
+            <View style={[styles.gridLineA, { top: gridLineATop }]} />
+            <View style={[styles.gridLineB, { top: gridLineBTop }]} />
+            <View style={[styles.groundLine, { top: groundTop }]} />
+
+            <View style={[styles.baseTower, { left: isLandscape ? 12 : 8, top: allyBaseTop, width: allyBaseWidth, height: allyBaseHeight, borderWidth: isLandscape ? 3 : 2 }]}>
+              <Image source={getBaseAsset(ASSET_KEYS.bases.playerMain)} style={styles.baseTowerAsset} resizeMode="contain" />
+              <View style={[styles.baseShield, { opacity: 0.22 + baseFlash * 0.58, transform: [{ scale: 1 + baseFlash * 0.28 }] }]} />
+              <View style={[styles.baseShieldInner, { opacity: 0.18 + baseFlash * 0.5 }]} />
+              <View style={[styles.baseCore, isLandscape ? styles.baseCoreLandscape : null]} />
+              <View style={[styles.baseCoreGlow, isLandscape ? styles.baseCoreGlowLandscape : null, { opacity: 0.22 + baseFlash * 0.62 }]} />
+              <Text style={[styles.baseText, isLandscape ? styles.baseTextLandscape : null]}>BASE</Text>
+            </View>
+            <View style={[styles.basePlatform, { left: isLandscape ? 14 : 10, top: groundTop + 4, width: allyBaseWidth + 16 }]} />
+
+            <View style={[styles.enemyGate, { right: isLandscape ? 12 : 8, top: enemyBaseTop, width: enemyBaseWidth, height: enemyBaseHeight, borderWidth: isLandscape ? 3 : 2 }]}>
+              <Image source={getBaseAsset(ASSET_KEYS.bases.enemyMain)} style={styles.enemyGateAsset} resizeMode="contain" />
+              <View
+                style={[
+                  styles.enemyPulse,
+                  threat === 'spike' ? styles.enemyPulseSpike : null,
+                  { opacity: 0.2 + spawnPulse * 0.58, transform: [{ scale: 1 + spawnPulse * 0.52 }] },
+                ]}
+              />
+              <View
+                style={[
+                  styles.enemyPulse,
+                  styles.enemyPulseOuter,
+                  { opacity: 0.1 + spawnPulse * 0.4, transform: [{ scale: 1.15 + spawnPulse * 0.35 }] },
+                ]}
+              />
+              <Text style={[styles.gateText, isLandscape ? styles.gateTextLandscape : null]}>ENTRY</Text>
+            </View>
+            <View style={[styles.enemyPlatform, { right: isLandscape ? 14 : 10, top: groundTop + 4, width: enemyBaseWidth + 16 }]} />
+
+            {Array.from({ length: sparkCount }).map((_, index) => (
+              <BattlefieldSpark key={`spark_${index}`} index={index} elapsedSec={runtime.elapsedSec} spike={threat === 'spike'} laneHeight={laneHeight} />
+            ))}
+
+            {runtime.shotTraces.map((trace: any) => {
+              const from = trace.fromX * 100;
+              const to = trace.toX * 100;
+              const left = Math.min(from, to);
+              const width = Math.max(0.8, Math.abs(to - from));
+              const traceRatio = clamp01((trace.ttlSec || 0) / 0.12);
+              const traceY = trace.y * (laneHeight / 220);
+              const color = trace.team === 'ally' ? '#7fe9ff' : '#ff9f7f';
+
+              return (
+                <React.Fragment key={trace.id}>
+                  <View
+                    style={[
+                      styles.shotTrace,
+                      {
+                        left: `${left}%`,
+                        width: `${width}%`,
+                        top: traceY,
+                        backgroundColor: color,
+                        opacity: 0.25 + traceRatio * 0.72,
+                        height: isLandscape ? 2.5 : 2,
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.shotImpact,
+                      {
+                        left: `${to}%`,
+                        top: traceY - 2,
+                        backgroundColor: color,
+                        opacity: 0.4 + traceRatio * 0.6,
+                      },
+                    ]}
+                  />
+                </React.Fragment>
+              );
+            })}
+
+            {runtime.entities.map((entity: any) => (
+              <UnitSprite key={entity.id} entity={entity} elapsedSec={runtime.elapsedSec} groundTop={groundTop} unitSize={unitSize} />
+            ))}
+          </ImageBackground>
+
+          <View style={styles.battleFooterRow}>
+            <Text style={styles.footerChip}>PRESSURE {pressurePercent}%</Text>
+            <Text style={styles.footerChip}>ALLY {lanePressure.allyCount}</Text>
+            <Text style={styles.footerChipEnemy}>ENEMY {lanePressure.enemyCount}</Text>
+          </View>
+        </GamePanel>
+      </View>
 
       <GamePanel
-        title="Battlefield"
-        rightBadge={`W${runtime.wave} · E${lanePressure.enemyCount}`}
-        tone={threat === 'spike' ? 'enemy' : 'player'}
-        style={styles.battlePanel}
+        title="Production Console"
+        rightBadge={`${Math.round(runtime.watt)}W`}
+        tone="player"
+        style={[styles.consolePanel, isLandscape ? styles.consolePanelLandscape : styles.consolePanelPortrait]}
+        frameSource={getUiAsset(ASSET_KEYS.ui.deployBar)}
+        backgroundSource={getUiAsset(ASSET_KEYS.ui.assemblyConsoleMain)}
+        backgroundOpacity={0.34}
+        frameOpacity={0.64}
+        innerStyle={styles.consolePanelInner}
       >
-        <View style={styles.frontlineRow}>
-          <View style={styles.frontlineTrack}>
-            <View style={[styles.frontlineThreatFill, { width: `${lanePressure.pressure * 100}%` }]} />
-            <View style={[styles.frontlineMarkerAlly, { left: `${lanePressure.allyFront * 100}%` }]} />
-            <View style={[styles.frontlineMarkerEnemy, { left: `${lanePressure.enemyFront * 100}%` }]} />
+        <View style={styles.consoleHeadRow}>
+          <View style={styles.consoleGaugeWrap}>
+            <Text style={styles.consoleGaugeLabel}>WATT FLOW</Text>
+            <View style={styles.consoleGaugeTrack}>
+              <ImageBackground
+                source={getUiAsset(ASSET_KEYS.ui.wattPanel)}
+                resizeMode="stretch"
+                style={[styles.consoleGaugeFill, { width: `${wattRatio * 100}%` }]}
+                imageStyle={styles.consoleGaugeFillImage}
+              />
+            </View>
+            <Text style={styles.consoleGaugeValue}>{Math.round(runtime.wattRegen * 10) / 10}/s</Text>
           </View>
-          <View style={[styles.pressureChip, lanePressure.pressure > 0.7 ? styles.pressureChipHot : null]}>
-            <Text style={styles.pressureChipText}>{pressureLabel}</Text>
+          <View style={styles.consoleInfoRow}>
+            <Text style={styles.consoleInfoChip}>K {runtime.stats.kills}</Text>
+            <Text style={styles.consoleInfoChip}>D {runtime.stats.deployed}</Text>
+            <Text style={styles.consoleInfoChip}>W {runtime.wave}</Text>
           </View>
         </View>
 
-        <View style={styles.laneWrap}>
-          <View style={styles.gridLineA} />
-          <View style={styles.gridLineB} />
-          <View style={styles.groundLine} />
-
-          <View style={styles.baseTower}>
-            <View style={[styles.baseShield, { opacity: 0.22 + baseFlash * 0.58, transform: [{ scale: 1 + baseFlash * 0.28 }] }]} />
-            <View style={[styles.baseShieldInner, { opacity: 0.18 + baseFlash * 0.5 }]} />
-            <View style={styles.baseCore} />
-            <View style={[styles.baseCoreGlow, { opacity: 0.22 + baseFlash * 0.62 }]} />
-            <Text style={styles.baseText}>BASE</Text>
-          </View>
-
-          <View style={styles.enemyGate}>
-            <View
-              style={[
-                styles.enemyPulse,
-                threat === 'spike' ? styles.enemyPulseSpike : null,
-                { opacity: 0.2 + spawnPulse * 0.58, transform: [{ scale: 1 + spawnPulse * 0.52 }] },
-              ]}
-            />
-            <View
-              style={[
-                styles.enemyPulse,
-                styles.enemyPulseOuter,
-                { opacity: 0.1 + spawnPulse * 0.4, transform: [{ scale: 1.15 + spawnPulse * 0.35 }] },
-              ]}
-            />
-            <Text style={styles.gateText}>ENTRY</Text>
-          </View>
-
-          {Array.from({ length: sparkCount }).map((_, index) => (
-            <BattlefieldSpark key={`spark_${index}`} index={index} elapsedSec={runtime.elapsedSec} spike={threat === 'spike'} />
-          ))}
-
-          {runtime.shotTraces.map((trace: any) => {
-            const from = trace.fromX * 100;
-            const to = trace.toX * 100;
-            const left = Math.min(from, to);
-            const width = Math.max(0.8, Math.abs(to - from));
-            const traceRatio = clamp01((trace.ttlSec || 0) / 0.12);
-            const color = trace.team === 'ally' ? '#7fe9ff' : '#ff9f7f';
-
-            return (
-              <React.Fragment key={trace.id}>
-                <View
-                  style={[
-                    styles.shotTrace,
-                    {
-                      left: `${left}%`,
-                      width: `${width}%`,
-                      top: trace.y,
-                      backgroundColor: color,
-                      opacity: 0.25 + traceRatio * 0.7,
-                    },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.shotImpact,
-                    {
-                      left: `${to}%`,
-                      top: trace.y - 2,
-                      backgroundColor: color,
-                      opacity: 0.35 + traceRatio * 0.6,
-                    },
-                  ]}
-                />
-              </React.Fragment>
-            );
-          })}
-
-          {runtime.entities.map((entity: any) => (
-            <UnitSprite key={entity.id} entity={entity} elapsedSec={runtime.elapsedSec} />
-          ))}
-        </View>
-      </GamePanel>
-
-      <GamePanel title="Deploy Console" rightBadge={`${Math.round(runtime.watt)}W`} tone="player" style={styles.consolePanel}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.deployRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.deployRow, isLandscape ? styles.deployRowLandscape : null]}>
           {templates.map((template: any) => (
-            <View key={template.id} style={styles.deployCol}>
+            <View key={template.id} style={[styles.deployCol, isLandscape ? styles.deployColLandscape : null]}>
               <DeploymentButton
                 name={template.name}
                 role={template.role}
@@ -370,6 +516,8 @@ export function BattleScreen({ navigation }: any) {
                 cooldownSec={runtime.deployCooldowns[template.id] || 0}
                 availableWatt={runtime.watt}
                 onPress={() => onDeploy(template.id)}
+                skinSources={DEPLOY_BUTTON_SKINS}
+                iconSource={getUnitAsset({ team: 'ally', archetype: template.archetype })}
               />
             </View>
           ))}
@@ -377,14 +525,10 @@ export function BattleScreen({ navigation }: any) {
 
         <View style={styles.consoleFooter}>
           <Pressable style={styles.supportBtn}>
-            <Text style={styles.supportBtnText}>Support (Soon)</Text>
+            <Text style={styles.supportBtnText}>Support Relay</Text>
           </Pressable>
-          <View style={styles.statChipRow}>
-            <Text style={styles.statChip}>K {runtime.stats.kills}</Text>
-            <Text style={styles.statChip}>D {runtime.stats.deployed}</Text>
-          </View>
           <Pressable style={styles.resetBtn} onPress={onReset}>
-            <Text style={styles.resetBtnText}>Reset</Text>
+            <Text style={styles.resetBtnText}>Reset Run</Text>
           </Pressable>
         </View>
       </GamePanel>
@@ -393,8 +537,42 @@ export function BattleScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  screenContent: {
+    paddingTop: 8,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+  },
+  screenContentLandscape: {
+    paddingHorizontal: 10,
+  },
+  screenContentPortrait: {
+    paddingHorizontal: 12,
+  },
+  hudWrap: {
+    marginBottom: 6,
+  },
+  battleCore: {
+    flex: 1,
+    marginBottom: 8,
+  },
+  combatStage: {
+    gap: 8,
+  },
+  combatStageLandscape: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  combatStagePortrait: {
+    flexDirection: 'column',
+  },
   battlePanel: {
-    marginBottom: 10,
+    marginBottom: 0,
+    flex: 1,
+  },
+  battlePanelInner: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   frontlineRow: {
     marginBottom: 8,
@@ -410,6 +588,9 @@ const styles = StyleSheet.create({
     borderColor: '#39577d',
     backgroundColor: '#15243d',
     overflow: 'hidden',
+  },
+  frontlineTrackLandscape: {
+    height: 20,
   },
   frontlineThreatFill: {
     position: 'absolute',
@@ -437,6 +618,23 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#ff976e',
   },
+  frontlineMarkerLandscape: {
+    top: 2,
+    width: 7,
+    height: 14,
+    marginLeft: -3.5,
+    borderRadius: 3,
+  },
+  frontlineCenterLine: {
+    position: 'absolute',
+    top: -1,
+    bottom: -1,
+    marginLeft: -1,
+    width: 2,
+    borderRadius: 2,
+    backgroundColor: '#c4dfff',
+    opacity: 0.75,
+  },
   pressureChip: {
     minWidth: 82,
     height: 20,
@@ -459,12 +657,36 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   laneWrap: {
-    height: 220,
+    minHeight: 220,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#35527e',
     backgroundColor: '#0b1a34',
+  },
+  battleVignette: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: 'rgba(16,34,58,0.86)',
+    borderRadius: 12,
+  },
+  enemyPressureFog: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#6f2f2a',
+  },
+  playerBacklight: {
+    position: 'absolute',
+    left: -20,
+    top: 0,
+    bottom: 0,
+    width: '36%',
+    backgroundColor: 'rgba(40,110,140,0.2)',
+  },
+  laneBackgroundImage: {
+    opacity: 0.58,
   },
   gridLineA: {
     position: 'absolute',
@@ -491,6 +713,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#436591',
   },
   baseTower: {
+    overflow: 'hidden',
     position: 'absolute',
     left: 8,
     top: 74,
@@ -503,6 +726,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 9,
+  },
+  baseTowerAsset: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.76,
   },
   baseShield: {
     position: 'absolute',
@@ -541,13 +768,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#5de8ff',
   },
+  baseCoreLandscape: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+  },
+  baseCoreGlowLandscape: {
+    top: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+  },
   baseText: {
     zIndex: 2,
     color: '#cbfdff',
     fontSize: 10,
     fontWeight: '900',
   },
+  baseTextLandscape: {
+    fontSize: 11,
+    letterSpacing: 0.35,
+  },
   enemyGate: {
+    overflow: 'hidden',
     position: 'absolute',
     right: 8,
     top: 80,
@@ -559,7 +802,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#44271f',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+  },
+  enemyGateAsset: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.78,
   },
   enemyPulse: {
     position: 'absolute',
@@ -585,26 +831,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.5,
   },
+  gateTextLandscape: {
+    fontSize: 10,
+    letterSpacing: 0.6,
+  },
+  basePlatform: {
+    position: 'absolute',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(62,140,160,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(127,214,231,0.5)',
+  },
+  enemyPlatform: {
+    position: 'absolute',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(156,82,60,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,167,132,0.45)',
+  },
   unitWrap: {
     position: 'absolute',
-    marginLeft: -17,
-    width: 34,
-    height: 34,
     alignItems: 'center',
   },
   spawnRing: {
     position: 'absolute',
-    bottom: -4,
-    width: 33,
-    height: 12,
     borderRadius: 12,
     borderWidth: 1.5,
   },
   unitHpTrack: {
     position: 'absolute',
-    top: -7,
-    width: 28,
-    height: 4,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: '#263f62',
@@ -617,8 +874,6 @@ const styles = StyleSheet.create({
   unitShadow: {
     position: 'absolute',
     bottom: -1,
-    width: 24,
-    height: 5,
     borderRadius: 999,
   },
   unitShadowAlly: {
@@ -629,9 +884,6 @@ const styles = StyleSheet.create({
   },
   unitTrail: {
     position: 'absolute',
-    bottom: 8,
-    width: 7,
-    height: 5,
     borderRadius: 5,
   },
   unitTrailAlly: {
@@ -642,17 +894,33 @@ const styles = StyleSheet.create({
   },
   hitFlash: {
     position: 'absolute',
-    bottom: 4,
-    width: 22,
-    height: 22,
     borderRadius: 8,
   },
   muzzleFlash: {
     position: 'absolute',
-    bottom: 12,
-    width: 8,
-    height: 4,
     borderRadius: 3,
+  },
+  unitAsset: {
+    position: 'absolute',
+    bottom: 0,
+    borderRadius: 5,
+    opacity: 0.97,
+  },
+  unitPlate: {
+    position: 'absolute',
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  unitPlateAlly: {
+    borderColor: 'rgba(118,230,255,0.44)',
+    backgroundColor: 'rgba(34,82,112,0.42)',
+  },
+  unitPlateEnemy: {
+    borderColor: 'rgba(255,150,120,0.45)',
+    backgroundColor: 'rgba(114,52,42,0.4)',
+  },
+  unitAssetFlip: {
+    transform: [{ scaleX: -1 }],
   },
   silhouetteRoot: {
     position: 'absolute',
@@ -840,8 +1108,6 @@ const styles = StyleSheet.create({
   },
   spark: {
     position: 'absolute',
-    width: 3,
-    height: 3,
     borderRadius: 2,
     opacity: 0.85,
   },
@@ -857,20 +1123,130 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
   },
+  battleFooterRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  footerChip: {
+    borderWidth: 1,
+    borderColor: '#4f6f98',
+    borderRadius: 999,
+    backgroundColor: '#1b3555',
+    color: '#d4ebff',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  footerChipEnemy: {
+    marginLeft: 'auto',
+    borderWidth: 1,
+    borderColor: '#cf7b63',
+    borderRadius: 999,
+    backgroundColor: '#5c2f2a',
+    color: '#ffd8cc',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
   deployRow: {
     gap: 8,
   },
+  deployRowLandscape: {
+    gap: 10,
+    paddingRight: 4,
+  },
+  deployColumn: {
+    gap: 8,
+    paddingRight: 4,
+  },
   consolePanel: {
+    marginBottom: 0,
+  },
+  consolePanelInner: {
+    paddingHorizontal: 9,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  consolePanelLandscape: {
+    justifyContent: 'space-between',
+  },
+  consolePanelPortrait: {
     marginBottom: 4,
   },
   deployCol: {
     width: 168,
+  },
+  deployColLandscape: {
+    width: '100%',
+    minWidth: 230,
+  },
+  consoleHeadRow: {
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  consoleGaugeWrap: {
+    flex: 1,
+  },
+  consoleGaugeLabel: {
+    color: '#a2d0ec',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  consoleGaugeTrack: {
+    marginTop: 4,
+    height: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#4f7397',
+    backgroundColor: '#13263f',
+    overflow: 'hidden',
+  },
+  consoleGaugeFill: {
+    height: '100%',
+  },
+  consoleGaugeFillImage: {
+    opacity: 0.92,
+  },
+  consoleGaugeValue: {
+    marginTop: 3,
+    color: '#89d3ff',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  consoleInfoRow: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  consoleInfoChip: {
+    minWidth: 42,
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#587ba3',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    color: '#d6ecff',
+    fontSize: 10,
+    fontWeight: '900',
+    backgroundColor: '#1a3354',
   },
   consoleFooter: {
     marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  consoleFooterLandscape: {
+    marginTop: 8,
   },
   supportBtn: {
     flex: 1,

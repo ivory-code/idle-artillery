@@ -1,14 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from './palette';
 
-export function BaseHPBar({ hp, maxHp }) {
+export function BaseHPBar({ hp, maxHp, panelSource }) {
   const ratio = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
   const tone = ratio > 0.5 ? palette.good : ratio > 0.25 ? palette.warning : palette.enemyB;
-
-  return (
-    <View style={styles.wrap}>
+  const content = (
+    <>
       <View style={styles.row}>
         <Text style={styles.label}>BASE HP</Text>
         <Text style={styles.value}>
@@ -18,13 +17,29 @@ export function BaseHPBar({ hp, maxHp }) {
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${ratio * 100}%`, backgroundColor: tone }]} />
       </View>
-    </View>
+    </>
   );
+
+  if (panelSource) {
+    return (
+      <ImageBackground source={panelSource} resizeMode="stretch" style={styles.wrap} imageStyle={styles.panelImage}>
+        {content}
+      </ImageBackground>
+    );
+  }
+
+  return <View style={styles.wrap}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    overflow: 'hidden',
+    borderRadius: 8,
+    padding: 6,
     gap: 4,
+  },
+  panelImage: {
+    opacity: 0.25,
   },
   row: {
     flexDirection: 'row',

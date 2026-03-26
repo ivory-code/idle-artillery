@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { ASSET_KEYS, getDeployButtonSkins, getUiAsset, getUnitAsset } from '../assets';
 import { BattleTopHUD } from '../components/game-ui/BattleTopHUD';
 import { DeploymentButton } from '../components/game-ui/DeploymentButton';
 import { GamePanel } from '../components/game-ui/GamePanel';
 import { MechUnitCard } from '../components/game-ui/MechUnitCard';
 import { ResultRewardCard } from '../components/game-ui/ResultRewardCard';
 import { palette } from '../components/game-ui/palette';
+
+const deployButtonSkins = getDeployButtonSkins();
+
+function toUnitArchetype(role) {
+  if (role === 'Support') return 'support';
+  return 'artillery';
+}
 
 const mockUnits = [
   {
@@ -50,7 +58,12 @@ export function GameUIShowcaseScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <BattleTopHUD wave={4} timeLeftSec={183} watt={watt} wattMax={120} wattRegen={7.5} baseHp={1170} baseMaxHp={1600} threat="spike" />
 
-        <GamePanel title="Deploy Control" rightBadge="MANUAL">
+        <GamePanel
+          title="Deploy Control"
+          rightBadge="MANUAL"
+          frameSource={getUiAsset(ASSET_KEYS.ui.hudTopFrame)}
+          backgroundSource={getUiAsset(ASSET_KEYS.ui.hudFrames)}
+        >
           <View style={styles.deployRow}>
             {mockUnits.map((unit) => (
               <View key={unit.id} style={styles.deployCol}>
@@ -61,17 +74,29 @@ export function GameUIShowcaseScreen() {
                   cooldownSec={cooldowns[unit.id] || 0}
                   availableWatt={watt}
                   onPress={() => onDeploy(unit.id, unit.cost)}
+                  skinSources={deployButtonSkins}
+                  iconSource={getUnitAsset({ team: 'ally', archetype: toUnitArchetype(unit.archetype) })}
                 />
               </View>
             ))}
           </View>
         </GamePanel>
 
-        <GamePanel title="Unit Cards" rightBadge="ASSEMBLY">
+        <GamePanel title="Unit Cards" rightBadge="ASSEMBLY" frameSource={getUiAsset(ASSET_KEYS.ui.unitCardFrame)} backgroundSource={getUiAsset(ASSET_KEYS.ui.assemblyConsoleMain)}>
           <View style={styles.cardRow}>
             {mockUnits.map((unit) => (
               <View key={`card_${unit.id}`} style={styles.cardCol}>
-                <MechUnitCard name={unit.name} archetype={unit.archetype} cost={unit.cost} rarity={unit.rarity} modules={unit.modules} />
+                <MechUnitCard
+                  name={unit.name}
+                  archetype={unit.archetype}
+                  cost={unit.cost}
+                  rarity={unit.rarity}
+                  modules={unit.modules}
+                  unitImageSource={getUnitAsset({ team: 'ally', archetype: toUnitArchetype(unit.archetype) })}
+                  panelFrameSource={getUiAsset(ASSET_KEYS.ui.unitCardFrame)}
+                  panelBackgroundSource={getUiAsset(ASSET_KEYS.ui.assemblyConsoleMain)}
+                  rarityFrameSource={unit.rarity === 'rare' || unit.rarity === 'epic' ? getUiAsset(ASSET_KEYS.ui.rarityRare) : getUiAsset(ASSET_KEYS.ui.rarityCommon)}
+                />
               </View>
             ))}
           </View>

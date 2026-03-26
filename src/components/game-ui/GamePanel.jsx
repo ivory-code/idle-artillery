@@ -1,28 +1,51 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from './palette';
 
-export function GamePanel({ title, rightBadge, children, tone = 'default', style }) {
+export function GamePanel({
+  title = '',
+  rightBadge = '',
+  children = null,
+  tone = 'default',
+  style = null,
+  frameSource = null,
+  backgroundSource = null,
+  innerStyle = null,
+  backgroundOpacity = 0.35,
+  frameOpacity = 0.45,
+}) {
   const toneStyle = tone === 'enemy' ? styles.enemyTone : tone === 'player' ? styles.playerTone : null;
+  const body = (
+    <>
+      {(title || rightBadge) && (
+        <View style={styles.header}>
+          {title ? <Text style={styles.title}>{title}</Text> : <View />}
+          {rightBadge ? <Text style={styles.badge}>{rightBadge}</Text> : null}
+        </View>
+      )}
+      {children}
+    </>
+  );
 
   return (
     <View style={[styles.outer, toneStyle, style]}>
-      <View style={styles.inner}>
-        {(title || rightBadge) && (
-          <View style={styles.header}>
-            {title ? <Text style={styles.title}>{title}</Text> : <View />}
-            {rightBadge ? <Text style={styles.badge}>{rightBadge}</Text> : null}
-          </View>
-        )}
-        {children}
-      </View>
+      {backgroundSource ? (
+        <ImageBackground source={backgroundSource} resizeMode="stretch" style={[styles.inner, innerStyle]} imageStyle={[styles.innerBackground, { opacity: backgroundOpacity }]}>
+          {body}
+        </ImageBackground>
+      ) : (
+        <View style={[styles.inner, innerStyle]}>{body}</View>
+      )}
+      {frameSource ? <Image source={frameSource} style={[styles.frameOverlay, { opacity: frameOpacity }]} resizeMode="stretch" pointerEvents="none" /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outer: {
+    position: 'relative',
+    overflow: 'hidden',
     borderRadius: 14,
     borderWidth: 2,
     borderColor: palette.frameOuter,
@@ -35,6 +58,13 @@ const styles = StyleSheet.create({
     borderColor: palette.frameInner,
     backgroundColor: palette.panel,
     padding: 10,
+  },
+  innerBackground: {
+    opacity: 0.35,
+  },
+  frameOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.45,
   },
   playerTone: {
     borderColor: '#57b9c8',

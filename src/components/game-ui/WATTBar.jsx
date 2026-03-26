@@ -1,13 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from './palette';
 
-export function WATTBar({ value, max, regenPerSec }) {
+export function WATTBar({ value, max, regenPerSec, panelSource }) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
-
-  return (
-    <View style={styles.wrap}>
+  const content = (
+    <>
       <View style={styles.row}>
         <Text style={styles.label}>WATT</Text>
         <Text style={styles.value}>
@@ -18,13 +17,29 @@ export function WATTBar({ value, max, regenPerSec }) {
         <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
       </View>
       <Text style={styles.regen}>+{regenPerSec.toFixed(1)}/s</Text>
-    </View>
+    </>
   );
+
+  if (panelSource) {
+    return (
+      <ImageBackground source={panelSource} resizeMode="stretch" style={styles.wrap} imageStyle={styles.panelImage}>
+        {content}
+      </ImageBackground>
+    );
+  }
+
+  return <View style={styles.wrap}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    overflow: 'hidden',
+    borderRadius: 8,
+    padding: 6,
     gap: 4,
+  },
+  panelImage: {
+    opacity: 0.26,
   },
   row: {
     flexDirection: 'row',
