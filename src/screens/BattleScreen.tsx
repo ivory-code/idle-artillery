@@ -107,7 +107,7 @@ export function BattleScreen({ navigation }: any) {
   const enemyBaseTop = groundTop - enemyBaseHeight + 10;
 
   const timeLeftSec = Math.max(0, runtime.durationSec - runtime.elapsedSec);
-  const sparkCount = isLandscape ? Math.min(22, Math.max(10, runtime.entities.length + runtime.wave)) : Math.min(15, Math.max(6, runtime.entities.length + Math.floor(runtime.wave / 2)));
+  const sparkCount = isLandscape ? Math.min(14, Math.max(6, runtime.entities.length + Math.floor(runtime.wave / 2))) : Math.min(10, Math.max(4, runtime.entities.length));
 
   const spawnPulse = clamp01((runtime.spawnPulseSec || 0) / 0.26);
   const baseFlash = clamp01((runtime.baseFlashSec || 0) / 0.2);

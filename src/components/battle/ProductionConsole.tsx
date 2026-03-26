@@ -1,10 +1,8 @@
 import React from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ASSET_KEYS, getDeployButtonSkins, getUiAsset, getUnitAsset } from '../../assets';
+import { getUnitAsset } from '../../assets';
 import { DeploymentButton } from '../game-ui/DeploymentButton';
-
-const DEPLOY_BUTTON_SKINS = getDeployButtonSkins();
 
 interface ProductionConsoleProps {
   runtime: any;
@@ -18,7 +16,7 @@ export function ProductionConsole({ runtime, templates, isLandscape, onDeploy, o
   const wattRatio = runtime.wattMax > 0 ? runtime.watt / runtime.wattMax : 0;
 
   return (
-    <ImageBackground source={getUiAsset(ASSET_KEYS.ui.deployBar)} resizeMode="stretch" style={[styles.root, isLandscape ? styles.rootLandscape : styles.rootPortrait]} imageStyle={styles.rootImage}>
+    <View style={[styles.root, isLandscape ? styles.rootLandscape : styles.rootPortrait]}>
       <View style={styles.topRow}>
         <View style={styles.wattBox}>
           <View style={styles.wattHead}>
@@ -28,7 +26,7 @@ export function ProductionConsole({ runtime, templates, isLandscape, onDeploy, o
             </Text>
           </View>
           <View style={styles.wattTrack}>
-            <ImageBackground source={getUiAsset(ASSET_KEYS.ui.wattPanel)} resizeMode="stretch" style={[styles.wattFill, { width: `${Math.max(5, Math.round(wattRatio * 100))}%` }]} imageStyle={styles.wattFillImage} />
+            <View style={[styles.wattFill, { width: `${Math.max(5, Math.round(wattRatio * 100))}%` }]} />
           </View>
         </View>
         <View style={styles.infoRow}>
@@ -48,7 +46,6 @@ export function ProductionConsole({ runtime, templates, isLandscape, onDeploy, o
               cooldownSec={runtime.deployCooldowns[template.id] || 0}
               availableWatt={runtime.watt}
               onPress={() => onDeploy(template.id)}
-              skinSources={DEPLOY_BUTTON_SKINS}
               iconSource={getUnitAsset({ team: 'ally', archetype: template.archetype })}
             />
           </View>
@@ -63,7 +60,7 @@ export function ProductionConsole({ runtime, templates, isLandscape, onDeploy, o
           <Text style={styles.resetBtnText}>RESET RUN</Text>
         </Pressable>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -71,7 +68,7 @@ const styles = StyleSheet.create({
   root: {
     borderTopWidth: 2,
     borderColor: '#3d5674',
-    backgroundColor: '#101f32',
+    backgroundColor: '#0f1d2f',
     paddingTop: 7,
     paddingBottom: 7,
     paddingHorizontal: 10,
@@ -82,9 +79,6 @@ const styles = StyleSheet.create({
   },
   rootPortrait: {
     minHeight: 198,
-  },
-  rootImage: {
-    opacity: 0.18,
   },
   topRow: {
     flexDirection: 'row',
@@ -123,9 +117,7 @@ const styles = StyleSheet.create({
   },
   wattFill: {
     height: '100%',
-  },
-  wattFillImage: {
-    opacity: 0.95,
+    backgroundColor: '#67dff5',
   },
   infoRow: {
     flexDirection: 'row',

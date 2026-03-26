@@ -1,7 +1,5 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, Text, View } from 'react-native';
-
-import { ASSET_KEYS, getUiAsset } from '../../assets';
+import { StyleSheet, Text, View } from 'react-native';
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -41,12 +39,7 @@ function MeterCell({
         <Text style={styles.valueSmall}>{value}</Text>
       </View>
       <View style={styles.meterTrack}>
-        <ImageBackground
-          source={getUiAsset(ASSET_KEYS.ui.wattPanel)}
-          resizeMode="stretch"
-          style={[styles.meterFill, { width: `${Math.max(5, Math.round(clamp01(ratio) * 100))}%`, backgroundColor: fillColor }]}
-          imageStyle={styles.meterFillImage}
-        />
+        <View style={[styles.meterFill, { width: `${Math.max(5, Math.round(clamp01(ratio) * 100))}%`, backgroundColor: fillColor }]} />
       </View>
     </View>
   );
@@ -67,12 +60,12 @@ export function BattleHUD({ wave, timeLeftSec, watt, wattMax, baseHp, baseMaxHp 
 
   return (
     <View pointerEvents="none" style={styles.overlay}>
-      <ImageBackground source={getUiAsset(ASSET_KEYS.ui.hudTopFrame)} resizeMode="stretch" style={styles.strip} imageStyle={styles.stripImage}>
+      <View style={styles.strip}>
         <HudCell label="TIME" value={formatTime(timeLeftSec)} />
         <HudCell label="WAVE" value={`${wave}`} />
         <MeterCell label="WATT" value={`${Math.round(watt)}/${wattMax}`} ratio={wattRatio} fillColor="#6fe7ff" />
         <MeterCell label="BASE HP" value={`${Math.max(0, Math.round(baseHp))}/${baseMaxHp}`} ratio={baseRatio} fillColor="#8bf3b4" />
-      </ImageBackground>
+      </View>
     </View>
   );
 }
@@ -87,17 +80,14 @@ const styles = StyleSheet.create({
   },
   strip: {
     minHeight: 44,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#4a6587',
-    backgroundColor: 'rgba(9, 20, 34, 0.84)',
+    backgroundColor: 'rgba(8, 16, 28, 0.9)',
     paddingHorizontal: 6,
     paddingVertical: 5,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  stripImage: {
-    opacity: 0.2,
   },
   cell: {
     minWidth: 56,
@@ -149,8 +139,5 @@ const styles = StyleSheet.create({
   },
   meterFill: {
     height: '100%',
-  },
-  meterFillImage: {
-    opacity: 0.96,
   },
 });

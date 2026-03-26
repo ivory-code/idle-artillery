@@ -44,6 +44,8 @@ function ModuleAssembly({ archetype, isAlly, unitSize }: { archetype: string; is
       <View style={[styles.moduleBody, { width: bodyWidth, backgroundColor: accent, borderColor: frame }]} />
       <View style={[styles.moduleCore, { width: coreSize, height: coreSize, backgroundColor: frame }]} />
       <View style={[styles.moduleWeapon, { width: weaponWidth, backgroundColor: frame }]} />
+      <View style={[styles.moduleBrace, styles.moduleBraceLeft, { borderColor: frame }]} />
+      <View style={[styles.moduleBrace, styles.moduleBraceRight, { borderColor: frame }]} />
 
       {archetype === 'support' ? <View style={[styles.moduleSupportTank, { backgroundColor: accent, borderColor: frame }]} /> : null}
       {archetype === 'lightning' ? <View style={[styles.moduleLightningFin, { borderLeftColor: frame }]} /> : null}
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
   spark: {
     position: 'absolute',
     borderRadius: 2,
-    opacity: 0.85,
+    opacity: 0.62,
   },
   shotTrace: {
     position: 'absolute',
@@ -257,11 +259,11 @@ const styles = StyleSheet.create({
   spawnRing: {
     position: 'absolute',
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 2,
   },
   unitHpTrack: {
     position: 'absolute',
-    borderRadius: 999,
+    borderRadius: 1,
     borderWidth: 1,
     borderColor: '#2a415f',
     overflow: 'hidden',
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
   unitShadow: {
     position: 'absolute',
     bottom: -2,
-    borderRadius: 999,
+    borderRadius: 2,
   },
   unitShadowAlly: {
     backgroundColor: '#1c5f7d',
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     borderRadius: 2,
-    opacity: 0.95,
+    opacity: 0.7,
   },
   unitPlate: {
     position: 'absolute',
@@ -301,45 +303,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   unitPlateAlly: {
-    borderColor: 'rgba(118,230,255,0.44)',
-    backgroundColor: 'rgba(34,82,112,0.42)',
+    borderColor: 'rgba(118,230,255,0.58)',
+    backgroundColor: 'rgba(23,61,85,0.58)',
   },
   unitPlateEnemy: {
-    borderColor: 'rgba(255,150,120,0.45)',
-    backgroundColor: 'rgba(114,52,42,0.4)',
+    borderColor: 'rgba(255,150,120,0.58)',
+    backgroundColor: 'rgba(95,45,38,0.56)',
   },
   unitAssetFlip: {
     transform: [{ scaleX: -1 }],
   },
   moduleRoot: {
     position: 'absolute',
-    bottom: 2,
+    bottom: 3,
     width: '92%',
-    height: '72%',
+    height: '76%',
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
   moduleLower: {
     position: 'absolute',
-    bottom: 4,
-    height: 7,
+    bottom: 5,
+    height: 8,
     borderWidth: 1,
   },
   moduleBody: {
     position: 'absolute',
-    bottom: 10,
-    height: 12,
+    bottom: 12,
+    height: 13,
     borderWidth: 1,
   },
   moduleCore: {
     position: 'absolute',
-    bottom: 14,
+    bottom: 16,
   },
   moduleWeapon: {
     position: 'absolute',
-    bottom: 17,
+    bottom: 19,
     right: -2,
-    height: 4,
+    height: 5,
   },
   moduleSupportTank: {
     position: 'absolute',
@@ -379,5 +381,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 5,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
+  },
+  moduleBrace: {
+    position: 'absolute',
+    bottom: 9,
+    width: 5,
+    height: 10,
+    borderWidth: 1,
+  },
+  moduleBraceLeft: {
+    left: 4,
+  },
+  moduleBraceRight: {
+    right: 4,
   },
 });

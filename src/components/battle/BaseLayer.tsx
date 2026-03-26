@@ -37,7 +37,7 @@ export function BaseLayer({
         <View style={styles.baseHardPlate} />
         <View style={styles.baseTurretMount} />
         <View style={styles.baseTurretBarrel} />
-        <View style={[styles.playerShield, { opacity: 0.22 + baseFlash * 0.64, transform: [{ scale: 1 + baseFlash * 0.25 }] }]} />
+        <View style={[styles.baseDamageFlash, { opacity: 0.08 + baseFlash * 0.58 }]} />
         <Text style={[styles.baseLabel, isLandscape ? styles.baseLabelLandscape : null]}>BASE</Text>
       </View>
       <View style={[styles.playerPad, { left: isLandscape ? 18 : 12, top: groundTop + 6, width: allyBaseWidth + 24 }]} />
@@ -48,7 +48,7 @@ export function BaseLayer({
         <Image source={getBaseAsset(ASSET_KEYS.bases.enemyMain)} style={styles.baseAsset} resizeMode="contain" />
         <View style={styles.enemyGatePlate} />
         <View style={styles.enemyGateJaw} />
-        <View style={[styles.enemyPulse, threat === 'spike' ? styles.enemyPulseSpike : null, { opacity: 0.18 + spawnPulse * 0.64, transform: [{ scale: 1 + spawnPulse * 0.52 }] }]} />
+        <View style={[styles.enemyAlertPulse, threat === 'spike' ? styles.enemyAlertPulseHot : null, { opacity: 0.12 + spawnPulse * 0.62 }]} />
         <Text style={[styles.gateLabel, isLandscape ? styles.gateLabelLandscape : null]}>ENTRY</Text>
       </View>
       <View style={[styles.enemyPad, { right: isLandscape ? 18 : 12, top: groundTop + 6, width: enemyBaseWidth + 24 }]} />
@@ -81,25 +81,15 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     opacity: 0.84,
   },
-  playerShield: {
+  baseDamageFlash: {
     position: 'absolute',
-    top: -5,
-    left: -5,
-    right: -5,
-    bottom: -5,
-    borderWidth: 2,
-    borderRadius: 3,
-    borderColor: '#85efff',
-  },
-  enemyPulse: {
-    position: 'absolute',
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: '#8e4b3a',
-  },
-  enemyPulseSpike: {
-    backgroundColor: '#cd5c3d',
+    left: 3,
+    right: 3,
+    top: 3,
+    bottom: 3,
+    borderWidth: 1,
+    borderColor: '#84e7ff',
+    backgroundColor: 'rgba(83,182,207,0.18)',
   },
   baseLabel: {
     color: '#d6fcff',
@@ -184,5 +174,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffc29e',
     backgroundColor: 'rgba(170,94,72,0.74)',
+  },
+  enemyAlertPulse: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    top: 4,
+    bottom: 4,
+    borderWidth: 1,
+    borderColor: '#d07f62',
+    backgroundColor: 'rgba(173,82,58,0.26)',
+  },
+  enemyAlertPulseHot: {
+    borderColor: '#f08c67',
+    backgroundColor: 'rgba(230,102,69,0.3)',
   },
 });

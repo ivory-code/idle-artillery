@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from './palette';
 
@@ -10,17 +10,16 @@ function roleTone(role) {
   return '#8de0ff';
 }
 
-export function DeploymentButton({ name, role, cost, cooldownSec = 0, availableWatt, onPress, skinSources, iconSource }) {
+export function DeploymentButton({ name, role, cost, cooldownSec = 0, availableWatt, onPress, iconSource }) {
   const canUse = availableWatt >= cost && cooldownSec <= 0;
   const tone = roleTone(role);
 
   return (
     <Pressable onPress={onPress} disabled={!canUse}>
       {({ pressed }) => {
-        const skinSource = !canUse ? skinSources?.disabled : pressed ? skinSources?.active || skinSources?.normal : skinSources?.normal;
         const outerStyle = [styles.outer, { borderColor: canUse ? tone : '#4a5b77' }, pressed && canUse ? styles.pressed : null, !canUse ? styles.locked : null];
-        const content = (
-          <>
+        return (
+          <View style={outerStyle}>
             <View style={[styles.topAccent, { backgroundColor: tone, opacity: canUse ? 0.55 : 0.22 }]} />
             <View style={styles.top}>
               <View style={styles.nameRow}>
@@ -39,18 +38,8 @@ export function DeploymentButton({ name, role, cost, cooldownSec = 0, availableW
               <Text style={[styles.role, { borderColor: tone, color: tone }]}>{role}</Text>
               {cooldownSec > 0 ? <Text style={styles.cooldown}>CD {cooldownSec.toFixed(1)}</Text> : <Text style={styles.ready}>RDY</Text>}
             </View>
-          </>
+          </View>
         );
-
-        if (skinSource) {
-          return (
-            <ImageBackground source={skinSource} resizeMode="stretch" style={outerStyle} imageStyle={styles.skinImage}>
-              {content}
-            </ImageBackground>
-          );
-        }
-
-        return <View style={outerStyle}>{content}</View>;
       }}
     </Pressable>
   );
@@ -132,9 +121,5 @@ const styles = StyleSheet.create({
     color: palette.good,
     fontSize: 9,
     fontWeight: '900',
-  },
-  skinImage: {
-    borderRadius: 1,
-    opacity: 0.22,
   },
 });
