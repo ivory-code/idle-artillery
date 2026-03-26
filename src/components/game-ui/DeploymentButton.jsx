@@ -37,7 +37,7 @@ export function DeploymentButton({ name, role, cost, cooldownSec = 0, availableW
             </View>
             <View style={styles.badges}>
               <Text style={[styles.role, { borderColor: tone, color: tone }]}>{role}</Text>
-              {cooldownSec > 0 ? <Text style={styles.cooldown}>CD {cooldownSec.toFixed(1)}</Text> : <Text style={styles.ready}>READY</Text>}
+              {cooldownSec > 0 ? <Text style={styles.cooldown}>CD {cooldownSec.toFixed(1)}</Text> : <Text style={styles.ready}>RDY</Text>}
             </View>
           </>
         );
@@ -58,12 +58,12 @@ export function DeploymentButton({ name, role, cost, cooldownSec = 0, availableW
 
 const styles = StyleSheet.create({
   outer: {
-    minHeight: 76,
+    minHeight: 72,
     borderWidth: 2,
-    borderRadius: 12,
-    backgroundColor: '#1a2e52',
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    borderRadius: 2,
+    backgroundColor: '#162a45',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   pressed: {
     opacity: 0.82,
@@ -73,8 +73,7 @@ const styles = StyleSheet.create({
   },
   topAccent: {
     height: 2,
-    borderRadius: 2,
-    marginBottom: 6,
+    marginBottom: 5,
   },
   top: {
     flexDirection: 'row',
@@ -86,58 +85,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 8,
-    gap: 6,
+    gap: 5,
   },
   iconPlate: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 22,
+    height: 22,
     borderWidth: 1,
-    backgroundColor: '#132843',
+    backgroundColor: '#13243a',
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    width: 18,
-    height: 18,
-    borderRadius: 3,
+    width: 17,
+    height: 17,
   },
   name: {
     color: palette.textMain,
     fontWeight: '900',
-    fontSize: 13,
+    fontSize: 12,
     flex: 1,
   },
   cost: {
     fontWeight: '900',
-    fontSize: 13,
+    fontSize: 12,
   },
   badges: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 7,
   },
   role: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    fontSize: 9,
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    fontSize: 8,
     fontWeight: '900',
   },
   cooldown: {
     color: palette.enemyB,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
   },
   ready: {
     color: palette.good,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
   },
   skinImage: {
-    borderRadius: 10,
-    opacity: 0.52,
+    borderRadius: 1,
+    opacity: 0.22,
   },
 });
