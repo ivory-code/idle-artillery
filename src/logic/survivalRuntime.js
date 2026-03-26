@@ -11,12 +11,25 @@ function getSpawnInterval(elapsedSec, wave) {
   return isSpike ? Math.max(0.45, base * 0.58) : base;
 }
 
+function inferTemplateArchetype(role, modules) {
+  const key = `${modules.weapon} ${modules.body} ${modules.mobility} ${modules.core}`.toLowerCase();
+
+  if (key.includes('mint') || key.includes('ice') || key.includes('frost') || key.includes('bubble')) return 'ice';
+  if (key.includes('volt') || key.includes('rail') || key.includes('spark') || role === 'Sharpshot') return 'lightning';
+  if (key.includes('burn') || key.includes('flame') || key.includes('fire') || key.includes('pepper') || role === 'Barrage') return 'fire';
+  if (role === 'Support' || key.includes('drone') || key.includes('utility')) return 'support';
+  return 'artillery';
+}
+
 function createEnemy(id, wave) {
   const hpScale = 1 + wave * 0.2;
   const atkScale = 1 + wave * 0.16;
+  const archetypeCycle = ['fire', 'lightning', 'artillery', 'ice'];
+  const archetype = archetypeCycle[wave % archetypeCycle.length];
   return {
     id,
     team: 'enemy',
+    archetype,
     x: 0.96,
     hp: Math.round(70 * hpScale),
     maxHp: Math.round(70 * hpScale),
@@ -25,6 +38,9 @@ function createEnemy(id, wave) {
     range: 0.07,
     fireRate: 0.9 + wave * 0.02,
     cooldownSec: 0.7,
+    flashSec: 0,
+    hitSec: 0,
+    spawnSec: 0.45,
   };
 }
 
@@ -54,6 +70,17 @@ function applyEntityActions(state, dt) {
       const dist = Math.abs(target.x - entity.x);
       if (dist <= entity.range && entity.cooldownSec <= 0) {
         target.hp -= entity.attack;
+        target.hitSec = 0.16;
+        entity.flashSec = 0.1;
+        state.shotTraces.push({
+          id: `shot_${state.nextFxId}`,
+          fromX: entity.x,
+          toX: target.x,
+          y: 100,
+          team: 'ally',
+          ttlSec: 0.12,
+        });
+        state.nextFxId += 1;
         entity.cooldownSec = 1 / entity.fireRate;
       } else {
         entity.x = clamp(entity.x + entity.speed * dt, 0.1, 0.86);
@@ -66,6 +93,17 @@ function applyEntityActions(state, dt) {
       const dist = Math.abs(target.x - entity.x);
       if (dist <= entity.range && entity.cooldownSec <= 0) {
         target.hp -= entity.attack;
+        target.hitSec = 0.18;
+        entity.flashSec = 0.09;
+        state.shotTraces.push({
+          id: `shot_${state.nextFxId}`,
+          fromX: entity.x,
+          toX: target.x,
+          y: 103,
+          team: 'enemy',
+          ttlSec: 0.11,
+        });
+        state.nextFxId += 1;
         entity.cooldownSec = 1 / entity.fireRate;
       } else {
         entity.x = clamp(entity.x - entity.speed * dt, 0.08, 0.97);
@@ -76,6 +114,7 @@ function applyEntityActions(state, dt) {
 
     if (entity.x <= 0.1 && entity.cooldownSec <= 0) {
       state.baseHp = Math.max(0, state.baseHp - entity.attack);
+      state.baseFlashSec = 0.2;
       entity.cooldownSec = 1 / entity.fireRate;
     }
   }
@@ -99,6 +138,7 @@ export function createDeployTemplates(units, builds, partMap) {
         };
 
     const role = unit.roleIdentity;
+    const archetype = inferTemplateArchetype(role, modules);
     const cost = Math.max(16, Math.round((unit.stats.attack * 0.6 + unit.stats.hp * 0.12 + unit.stats.defense * 1.8) / 3.5));
     const moveBonus = role === 'Barrage' ? 0.02 : role === 'Bulwark' ? -0.012 : 0.005;
     const rangeBonus = role === 'Sharpshot' ? 0.035 : role === 'Support' ? -0.01 : 0;
@@ -107,6 +147,7 @@ export function createDeployTemplates(units, builds, partMap) {
       id: unit.id,
       name: unit.name,
       role,
+      archetype,
       cost,
       hp: Math.round(unit.stats.hp * 0.62),
       attack: Math.round(unit.stats.attack * 0.85),
@@ -138,7 +179,10 @@ export function createSurvivalState(templates) {
     wattMax: 120,
     wattRegen: 7,
     spawnTimerSec: 1.2,
+    spawnPulseSec: 0,
+    baseFlashSec: 0,
     entities: [],
+    shotTraces: [],
     templates,
     deployCooldowns: cooldowns,
     stats: {
@@ -147,6 +191,7 @@ export function createSurvivalState(templates) {
       spikeMoments: 0,
     },
     nextEntityId: 1,
+    nextFxId: 1,
   };
 }
 
@@ -169,6 +214,7 @@ export function deployUnit(state, templateId) {
   next.entities.push({
     id: `ally_${next.nextEntityId}`,
     team: 'ally',
+    archetype: template.archetype || 'artillery',
     x: 0.14,
     hp: template.hp,
     maxHp: template.hp,
@@ -177,6 +223,9 @@ export function deployUnit(state, templateId) {
     range: template.range,
     fireRate: template.fireRate,
     cooldownSec: 0.4,
+    flashSec: 0,
+    hitSec: 0,
+    spawnSec: 0.4,
   });
 
   return next;
@@ -190,9 +239,20 @@ export function stepSurvivalState(state, dt) {
     elapsedSec: state.elapsedSec + dt,
     watt: clamp(state.watt + state.wattRegen * dt, 0, state.wattMax),
     deployCooldowns: { ...state.deployCooldowns },
-    entities: state.entities.map((entity) => ({ ...entity })),
+    entities: state.entities.map((entity) => ({
+      ...entity,
+      flashSec: Math.max(0, (entity.flashSec || 0) - dt),
+      hitSec: Math.max(0, (entity.hitSec || 0) - dt),
+      spawnSec: Math.max(0, (entity.spawnSec || 0) - dt),
+    })),
+    shotTraces: (state.shotTraces || [])
+      .map((trace) => ({ ...trace, ttlSec: trace.ttlSec - dt }))
+      .filter((trace) => trace.ttlSec > 0),
+    baseFlashSec: Math.max(0, (state.baseFlashSec || 0) - dt),
+    spawnPulseSec: Math.max(0, (state.spawnPulseSec || 0) - dt),
     stats: { ...state.stats },
   };
+  next.nextFxId = state.nextFxId || 1;
 
   next.wave = Math.floor(next.elapsedSec / 30) + 1;
   if (next.elapsedSec >= next.durationSec) {
@@ -214,6 +274,7 @@ export function stepSurvivalState(state, dt) {
       next.entities.push(enemy);
     }
     next.nextEntityId += pack;
+    next.spawnPulseSec = 0.26;
     next.spawnTimerSec = getSpawnInterval(next.elapsedSec, next.wave);
   }
 

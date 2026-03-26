@@ -1,0 +1,17 @@
+export const palette = {
+  bg: '#08101f',
+  panel: '#132544',
+  panelInner: '#1a3158',
+  frameOuter: '#5475a8',
+  frameInner: '#2f4c79',
+  textMain: '#f2f8ff',
+  textDim: '#b9cdee',
+  playerA: '#4ad9d2',
+  playerB: '#6bf1ff',
+  enemyA: '#ff8a4f',
+  enemyB: '#ff5f5f',
+  good: '#8df2a8',
+  warning: '#ffcd77',
+  rare: '#78b6ff',
+  epic: '#ffd27b',
+};
